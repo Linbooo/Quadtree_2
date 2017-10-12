@@ -13,8 +13,8 @@ public class Mover : MonoBehaviour {
 
 	void Update () {
 		transform.Translate( Input.GetAxis("Horizontal") * Time.deltaTime  * 15f, 0f, Input.GetAxis("Vertical") * Time.deltaTime * 15f, Space.Self);
-		transform.Rotate(0f, Input.GetAxis("Mouse X") * Time.deltaTime * 30f, 0f, Space.World);
-		transform.Rotate(-Input.GetAxis("Mouse Y") * Time.deltaTime * 30f, 0f, 0f, Space.Self);
+		transform.Rotate(0f, Input.GetAxis("Mouse X") * Time.deltaTime * 50f, 0f, Space.World);
+		transform.Rotate(-Input.GetAxis("Mouse Y") * Time.deltaTime * 50f, 0f, 0f, Space.Self);
 
 		if(Input.GetKeyDown(KeyCode.Mouse0)){
 			GameObject newCube = (GameObject) GameObject.Instantiate(Resources.Load("Cube"), transform.position + transform.forward * 6, transform.rotation);
