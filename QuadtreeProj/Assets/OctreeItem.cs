@@ -16,13 +16,12 @@ public class OctreeItem : MonoBehaviour {
 	void FixedUpdate () {
         if(transform.position != prevPos)
         {
-            OctreeNode.octreeRoot.ProcessItem(this);
-
+            RefreshOwners(); // call it as soon as this item has moved.
             prevPos = transform.position;
         }
 	}
 
-    private void RefreshOwners()
+    public void RefreshOwners()
     {
         OctreeNode.octreeRoot.ProcessItem(this);
 
@@ -43,7 +42,10 @@ public class OctreeItem : MonoBehaviour {
 
         my_ownerNodes = surviveNodes;
 
-        foreach(OctreeNode on in )
+        foreach(OctreeNode on in obsoleteNodes)
+        {
+            on.Attempt_ReduceSubdivisions(this);
+        }
     }
 
 

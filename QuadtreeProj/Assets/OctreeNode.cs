@@ -1,10 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic; // to use generic list&stack
 using UnityEngine;
-
+using System.Linq;
 public class OctreeNode
 {
-    public static int maxObjectLimit = 11;
+    public static int maxObjectLimit = 1;
 
     static OctreeNode _octreeRoot;
     public static OctreeNode octreeRoot   // Singleton method
@@ -36,7 +36,10 @@ public class OctreeNode
         get { return _childrenNodes; }
     }
 
-
+    public void EraseChildrenNodes()
+    {
+        _childrenNodes = new OctreeNode[8];
+    }
 
     [RuntimeInitializeOnLoadMethod] //this method is runned when Unity starts
     static bool Init()
@@ -59,7 +62,7 @@ public class OctreeNode
 
         foreach (OctreeItem item in potential_Items)
         {
-            // ProcessItem(item);
+            ProcessItem(item);
         }
 
     }
@@ -130,12 +133,38 @@ public class OctreeNode
     }
 
 
-    public void Attempt_ReduceSubdivisions()
+    public void Attempt_ReduceSubdivisions(OctreeItem escapedItem)
     {
-        if(!ReferenceEquals(this, octreeRoot) && !Siblings_ChildrenNodesPresent_too_manyItems())
+        if( ! ReferenceEquals(this, octreeRoot) && ! Siblings_ChildrenNodesPresent_too_manyItems())
         {
+            // Delete node and siblings
+            foreach(OctreeNode on in parent.childrenNodes) // iterate through this node and its 7 siblings, them kill them
+            {
+                on.KillNode(parent.childrenNodes.Where(i => !ReferenceEquals(i, this)).ToArray()); // pass 7 siblings as we will be killing this node.
+            }
+            parent.EraseChildrenNodes(); //make parent forget about its old, already killed children nodes.
 
         }
+        else // otherwise, of there are children in siblings, or there are too many items for the parent to potentially hold, then: 
+        {
+            containedItems.Remove(escapedItem); //remove the item from the contained items of this particular node since such item no longer falls into the domain of this node.
+            escapedItem.my_ownerNodes.Remove(this);
+        }
+
+    }
+
+    private void KillNode(OctreeNode[] obsoleteSiblingNodes)
+    {
+        foreach(OctreeItem oi in containedItems)
+        {
+            oi.my_ownerNodes = oi.my_ownerNodes.Except(obsoleteSiblingNodes).ToList(); // from such item's owner node extract a list excluding all the siblings of this obsolete node. Then 
+                                                                                       //reassign such list to the owner nodes of that item
+            oi.my_ownerNodes.Remove(this); // remove this node as well, after removing its 7 siblings.
+            oi.my_ownerNodes.Add(parent);
+            parent.containedItems.Add(oi);
+        }
+
+        GameObject.Destroy(octantGO);
     }
 
     private bool Siblings_ChildrenNodesPresent_too_manyItems() // true if the children nodes are present in siblings of this particular obsolete node
@@ -143,7 +172,24 @@ public class OctreeNode
     {
         List<OctreeItem> legacy_items = new List<OctreeItem>(); // items contained in this obsolete node and the siblings
 
-        return false;
+        foreach(OctreeNode sibling in parent.childrenNodes) //iterate through siblings and see if they have any children
+        {
+            if( ! ReferenceEquals(sibling.childrenNodes[0], null)) // if they do have children then return true ( this obsolete node and its siblings won't get deleted later)
+            {
+                return true;
+            }
+
+            legacy_items.AddRange(sibling.containedItems.Where(i => !legacy_items.Contains(i))); //add all the items from the currently inspected sibling, Add only
+            // the items not already contained in our legacy items list.
+        }
+        
+        if (legacy_items.Count > maxObjectLimit + 1 ) // too many items for the parent to hold, Do not get rid of siblings and this particular obsolete node.
+        {
+            return true;
+        }
+
+        return false; // Having lookad at all the siblings and none of them contain child nodes. Their items altogether could be held by the parent. So delete
+                      // this particular node and those sibling nodes.
     }
 
 

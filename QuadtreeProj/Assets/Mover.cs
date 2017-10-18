@@ -17,8 +17,10 @@ public class Mover : MonoBehaviour {
 		transform.Rotate(-Input.GetAxis("Mouse Y") * Time.deltaTime * 50f, 0f, 0f, Space.Self);
 
 		if(Input.GetKeyDown(KeyCode.Mouse0)){
-			GameObject newCube = (GameObject) GameObject.Instantiate(Resources.Load("Cube"), transform.position + transform.forward * 6, transform.rotation);
-		}
+			GameObject newCube = (GameObject) GameObject.Instantiate(Resources.Load("Cube"));
+            newCube.transform.position = this.transform.position + transform.forward * 6;
+            newCube.GetComponent<OctreeItem>().RefreshOwners();
+        }
 
 		RaycastHit hit;
 
